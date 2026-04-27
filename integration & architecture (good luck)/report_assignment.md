@@ -52,6 +52,7 @@ Or for authentication you can explain:
 
 Or for file storage (S3/Minio) you can explain:
 - What is object storage 
+- Image retireve flow etc
 - What is a presigned URL and why would you use one instead of routing the file through the backend?
 - What does Boto3 do and how does Minio fit in as a local alternative to AWS S3?
 - Where in the codebase does a file upload get handled — what goes to S3 and what gets stored in the database?
