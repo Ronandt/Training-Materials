@@ -13,20 +13,12 @@ In order to run this application, you will need to know how to setup Keycloak an
 
 ## Recommended Contents
 
-**Part 1 — What you built (your work)**
-
-0. Brief intro — what the SWEGP project is, what it does, and the stack you chose
-1. Data model walkthrough — your SQLAlchemy models, relationships, and how Alembic managed the schema
-2. API tour — a Pydantic schema you are proud of, a route that does something interesting, any validation or error handling you added
-3. Frontend walkthrough — your React Router structure, a `useQuery` / `useMutation` flow end-to-end, and one shadcn component you used well
-4. Live demo — show the core user flow: create something, view it, update it, delete it
-5. What you would do differently or add next
-
-**Part 2 — The architecture template (high level)**
-
-6. What problem does the template solve that your project does not yet address?
-7. Architecture diagram — what the major pieces are (frontend, backend, Keycloak, S3/Minio, database) and how they connect
-8. One thing you found interesting or surprising in the template code
+0. Brief intro — what is the template, what problem does it solve, and who would use it
+1. Architecture diagram — the major components (frontend, backend, Keycloak, S3/Minio, PostgreSQL) and how they connect to each other
+2. Concepts from the stack not taught in training — explain what each unfamiliar piece is and the role it plays (see the list below for guidance)
+3. Live demo — run the template locally and show the login flow, a protected route, and an admin-only action
+4. Code walkthrough — trace one request through the system: from the frontend, through the backend, through auth, to the database and back
+5. How you would extend it — pick one feature and explain concretely how you would add it to the template
 
 *Things that was not taught in the training/Explicitely not taught
 - Code architecture (How to architecture your app Services, repository pattern, guard patterns , error handling) (IMPORTANT)
@@ -45,3 +37,4 @@ In order to run this application, you will need to know how to setup Keycloak an
 - Extending the architecture
 
 
+Your trainer will also ask a few questions about the application and contents in the Software Engineering Bible to ensure that your understanding is solid.
