@@ -48,7 +48,7 @@ Or for authentication you can explain:
 - Which part of the code checks the roles or identity of the user, and how does it do it?
 - How are tokens refreshed — what happens when an access token expires?
 - What is the difference between a realm, a client, a group, and a role in Keycloak?
-- What does the Keycloak adapter (python-keycloak) do that you could not do yourself with a raw HTTP call?
+- What does the Keycloak adapter (python-keycloak) do 
 
 Or for file storage (S3/Minio) you can explain:
 - What is object storage 
