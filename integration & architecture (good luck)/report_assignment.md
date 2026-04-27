@@ -12,14 +12,21 @@ Software Engineering Bible: https://docs.google.com/document/d/1GKBNkuOWUwuF6SQb
 In order to run this application, you will need to know how to setup Keycloak and be able to run the frontend and the backend. Refer to template_setup_backend.md and template_setup_backend.md. 
 
 ## Recommended Contents
-0. Basic knowledge about the things you ahve learnt so far tailwind css, react etc and the roles they play for context
-1. What problem does this template solve?       
-2. Architecture diagram + component roles       
-3. Live demo: login, group gate, admin route    
-4. Code walkthrough: auth flow in both repos    
-5. How to extend it - adding a feature          
-6. What to do before going to production        
-7. Q&A
+
+**Part 1 — What you built (your work)**
+
+0. Brief intro — what the SWEGP project is, what it does, and the stack you chose
+1. Data model walkthrough — your SQLAlchemy models, relationships, and how Alembic managed the schema
+2. API tour — a Pydantic schema you are proud of, a route that does something interesting, any validation or error handling you added
+3. Frontend walkthrough — your React Router structure, a `useQuery` / `useMutation` flow end-to-end, and one shadcn component you used well
+4. Live demo — show the core user flow: create something, view it, update it, delete it
+5. What you would do differently or add next
+
+**Part 2 — The architecture template (high level)**
+
+6. What problem does the template solve that your project does not yet address?
+7. Architecture diagram — what the major pieces are (frontend, backend, Keycloak, S3/Minio, database) and how they connect
+8. One thing you found interesting or surprising in the template code
 
 *Things that was not taught in the training/Explicitely not taught
 - Code architecture (How to architecture your app Services, repository pattern, guard patterns , error handling) (IMPORTANT)
