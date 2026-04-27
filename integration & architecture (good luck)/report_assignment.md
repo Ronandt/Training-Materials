@@ -42,25 +42,31 @@ For example for code architecture you can explain:
 - How are exceptions raised in a service and where do they get caught and turned into HTTP responses?
 - How is dependency injection used — what does FastAPI's `Depends()` actually do at runtime?
 - Why is the repository pattern useful when you want to swap out the database later?
+- If I to talk to an API how would i connect to it, services, adapters etc
+- If I have an API Adapter, should i use an SQLAlchemy class because it's one level below the service layer? If no, what should I use to encapsulate data?
 
 Or for authentication you can explain:
 - How is the JWT token passed from the frontend to the backend on each request?
 - Which part of the code checks the roles or identity of the user, and how does it do it?
-- How are tokens refreshed — what happens when an access token expires?
+- How are tokens refreshed - what happens when an access token expires?
 - What is the difference between a realm, a client, a group, and a role in Keycloak?
 - What does the Keycloak adapter (python-keycloak) do 
+- Difference between a confidential client vs private client
 
 Or for file storage (S3/Minio) you can explain:
 - What is object storage 
 - Image retireve flow etc
 - What is a presigned URL and why would you use one instead of routing the file through the backend?
 - What does Boto3 do and how does Minio fit in as a local alternative to AWS S3?
-- Where in the codebase does a file upload get handled — what goes to S3 and what gets stored in the database?
+- Where in the codebase does a file upload get handled - what goes to S3 and what gets stored in the database?
 
 Or for environment and settings you can explain:
 - Why should secrets never be hardcoded in the codebase — what is the actual risk?
 - How does the template load config from environment variables, and what library manages this?
 - What is the difference between a `.env` file used locally and how secrets are managed in a real deployed environment?
+
+Or for File Organisation you can explain:
+- Why are the file organised that way, why not based on repository, or service but feature?
 
 Or for logging you can explain:
 - What gets logged and at what level (DEBUG, INFO, WARNING, ERROR)?
@@ -76,5 +82,7 @@ Or for prod vs development you can explain:
 - What changes between a development config and a production config (CORS, debug mode, secret keys, HTTPS)?
 - What does it mean for an app to be stateless and why does it matter for deployment?
 
+Or for react you can explain
+- What is a websocket?
 
 Your trainer will also ask a few questions about the application and contents in the Software Engineering Bible to ensure that your understanding is solid.
