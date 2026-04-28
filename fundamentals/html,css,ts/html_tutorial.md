@@ -310,7 +310,127 @@ Add `id` and `class` attributes to your elements:
 
 These attributes do nothing by themselves — they are hooks for CSS (`.task-card { ... }`) and JavaScript (`document.getElementById("task-1")`). In the CSS tutorial you will use them to apply styles.
 
-## 5. Putting It Together
+## 5. TypeScript and the DOM
+
+So far the page is static — it displays content but does nothing when you interact with it. TypeScript (compiled to JavaScript) is what makes HTML interactive. The browser runs JavaScript; you write TypeScript and compile it first.
+
+### 5.1 — Linking a script
+
+Install TypeScript globally if you haven't already (from the TypeScript tutorial):
+
+```bash
+npm install -g typescript
+```
+
+Create `main.ts` in your `html-exercises` folder. Add a `<script>` tag at the bottom of `<body>` — after all the HTML — pointing to the compiled output:
+
+```html
+  ...
+  <script src="main.js"></script>
+</body>
+```
+
+Compile whenever you change `main.ts`:
+
+```bash
+tsc main.ts
+```
+
+This produces `main.js` which the browser loads. The TypeScript source is never sent to the browser.
+
+### 5.2 — Selecting elements
+
+The browser exposes the whole HTML document through `document`. You can grab any element by id or CSS selector:
+
+```typescript
+const heading = document.getElementById("task-1") as HTMLElement;
+const form = document.querySelector("form") as HTMLFormElement;
+const input = document.querySelector<HTMLInputElement>("#task-title")!;
+```
+
+TypeScript doesn't know what type a DOM query returns, so you tell it:
+
+- `as HTMLElement` — cast when you're certain what element type it is
+- `document.querySelector<HTMLInputElement>(...)` — generic form, same result
+- `!` at the end — tells TypeScript "this won't be null" (use only when you're sure)
+
+In Python terms, `document.getElementById` is like a dictionary lookup on a global registry of all elements on the page.
+
+### 5.3 — Event listeners
+
+An event listener is a function that runs when something happens — a click, a keypress, a form submission.
+
+```typescript
+const button = document.querySelector<HTMLButtonElement>("#my-btn")!;
+
+button.addEventListener("click", (event: MouseEvent) => {
+  console.log("clicked!");
+});
+```
+
+Open dev tools (`F12`) → Console tab to see `console.log` output.
+
+Add a button to your HTML with `id="my-btn"`, compile, refresh, and click it.
+
+### 5.4 — Handling form submission
+
+The browser's default form behaviour is to reload the page. Call `event.preventDefault()` to stop that and handle the data yourself — this is the pattern used in every React form too.
+
+```typescript
+const form = document.querySelector<HTMLFormElement>("form")!;
+const titleInput = document.querySelector<HTMLInputElement>("#task-title")!;
+
+form.addEventListener("submit", (event: SubmitEvent) => {
+  event.preventDefault();
+
+  const title: string = titleInput.value.trim();
+  if (title.length === 0) return;
+
+  console.log("New task:", title);
+  titleInput.value = ""; // clear the input
+});
+```
+
+Submit the form — the page no longer reloads, and the title appears in the console.
+
+### 5.5 — Challenge: render a task card dynamically
+
+Instead of logging to the console, create a real `<article>` element and add it to the page:
+
+```typescript
+function createTaskCard(title: string): HTMLElement {
+  const article = document.createElement("article");
+  article.className = "task-card";
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.addEventListener("click", () => article.remove());
+
+  article.appendChild(heading);
+  article.appendChild(deleteBtn);
+  return article;
+}
+
+const taskList = document.querySelector<HTMLElement>("#task-list")!;
+
+form.addEventListener("submit", (event: SubmitEvent) => {
+  event.preventDefault();
+  const title = titleInput.value.trim();
+  if (title.length === 0) return;
+  taskList.appendChild(createTaskCard(title));
+  titleInput.value = "";
+});
+```
+
+Add `<section id="task-list"><h2>Tasks</h2></section>` to your HTML, compile, and test: submit the form, see the card appear, click Delete to remove it.
+
+This is the core DOM pattern — create elements in TypeScript, set their properties, wire up events, and attach them to the page. React's JSX is a layer on top of exactly this.
+
+## 6. Putting It Together
 
 ### Final Exercise
 
@@ -359,3 +479,8 @@ Open the finished page in the browser. Open dev tools (`F12`) → Elements panel
 - [ ] Know when to use `<header>`, `<nav>`, `<main>`, `<section>`, `<article>`, `<footer>`
 - [ ] Know the difference between `id` (unique) and `class` (reusable)
 - [ ] Know when to use `<div>` vs a semantic element
+- [ ] Can link a compiled TypeScript file to an HTML page with `<script src="main.js">`
+- [ ] Can select elements with `document.querySelector` and apply the correct TypeScript type
+- [ ] Can attach event listeners with `addEventListener`
+- [ ] Know why `event.preventDefault()` is needed on form submission
+- [ ] Can create, populate, and append DOM elements entirely from TypeScript
