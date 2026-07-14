@@ -1,162 +1,80 @@
 # Async and Promises
 
-JavaScript runs on a single thread. That means if you wait for something — a network request, a file read, a database query — you block everything else. Promises are how JavaScript handles waiting without blocking.
+JavaScript runs on a single thread. That means if you wait for something — a network request, a file read, a database query — you block everything else. Promises (and `async`/`await` on top of them) are how JavaScript handles waiting without blocking.
 
-This tutorial builds from the problem up: why callbacks exist, why they're painful, why Promises fix them, and why `async/await` is the syntax you'll actually use every day.
+## What is async, and why do we need it?
 
-Work through each section in order. You need Node.js 18+ for the `fetch` exercises — run `node --version` to check.
+"Async" means code that keeps running instead of stopping to wait for something slow. The alternative — **synchronous** code — executes one line at a time, in order, and each line has to finish before the next one starts.
 
-## Before you start
+That's fine for fast, in-memory work like adding two numbers. It falls apart for anything that takes real time: fetching data over the network, reading a file from disk, querying a database. Those operations can take milliseconds to seconds — an eternity for a CPU. If JavaScript blocked on every one of them, a browser tab would freeze mid-request and a server would be unable to handle any other user's request until the first one finished.
 
-Read these first — they're short and will make the exercises click faster:
+Because JavaScript only has one thread to run code on, it can't just spin up a second thread to wait on your behalf the way some other languages do. Instead, it hands the slow operation off (to the browser or Node's runtime, outside your JS code), keeps executing everything else, and comes back to run your code again once the result is ready. That "come back to it later" mechanism is what `async` code, Promises, and `async`/`await` are all built around.
 
-- [javascript.info — Introduction: callbacks](https://javascript.info/callbacks) — why async code exists and what the problem looks like
-- [javascript.info — Promises](https://javascript.info/promise-basics) — how Promises work and why they're better than callbacks
+**Analogy:** think of a single waiter running a restaurant. A synchronous waiter takes one table's order, walks it to the kitchen, and then just stands there staring at the pass until the food is ready before doing anything else — every other table sits ignored the whole time. An async waiter takes the order, hands it to the kitchen, and immediately goes to take the next table's order, refill water, and clear plates. When the kitchen rings a bell for a finished dish, the waiter goes and delivers it, then goes right back to whatever they were doing. One waiter (thread), but nobody sits around blocked waiting on the kitchen (the slow operation).
+
+## Video
+
+[Mastering async code with Typescript and Javascript](https://www.youtube.com/watch?v=VcOMq3LQtBU&t=390s)
+
+## Resources
+
+- [javascript.info — Promises](https://javascript.info/promise-basics) — how Promises work
 - [javascript.info — async/await](https://javascript.info/async-await) — the syntax you'll actually write day to day
-- [MDN — Using Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises) — good to keep open while working through the exercises
 
-You don't need to understand everything before starting. Read enough to have a mental model, then come back when something doesn't make sense.
+## Supplementary Notes
 
-## 0. The problem
+**Promises**
 
-JavaScript can only do one thing at a time. If it had to wait for a network request to finish before moving on, the entire page (or server) would freeze until the response came back.
-
-The solution: instead of waiting, you hand JavaScript a callback — a function to call *when the work is done* — and move on. JavaScript will circle back to it later.
-
-This is what makes JavaScript async. Everything in this tutorial is built on that idea.
-
-## 1. Callbacks
-
-You've already used callbacks without knowing it. `.map()`, `.filter()`, and `.forEach()` all take callbacks. Async callbacks work the same way — except they run later, not immediately.
-
-### 1.1
-
-`setTimeout` schedules a callback to run after a delay. It doesn't block — execution continues immediately and the callback runs later.
-
-```ts
-console.log("start");
-
-setTimeout(() => {
-  console.log("inside timeout");
-}, 1000);
-
-console.log("end");
-```
-
-Run this. Before you do, write down what order you expect the three lines to print. Then check if you were right.
-
-### 1.2
-
-Here are three functions that simulate async operations using `setTimeout`:
-
-```ts
-function getUser(id: number, callback: (user: { id: number; name: string }) => void) {
-  setTimeout(() => callback({ id, name: "Alice" }), 300);
-}
-
-function getOrders(userId: number, callback: (orders: string[]) => void) {
-  setTimeout(() => callback(["order-1", "order-2"]), 300);
-}
-
-function getOrderDetails(orderId: string, callback: (detail: string) => void) {
-  setTimeout(() => callback(`Details for ${orderId}`), 300);
-}
-```
-
-Call all three in sequence — pass the result of each into the next — and log the final detail. You'll need to nest the calls.
-
-Read the shape of what you wrote. This nesting is called **callback hell**. Promises were invented to solve it.
-
-## 2. Promises
-
-A Promise represents a value that doesn't exist yet — it will either resolve (success) or reject (failure). You construct one like this:
+A Promise represents a value that doesn't exist yet — it will either resolve (success) or reject (failure):
 
 ```ts
 const p = new Promise<string>((resolve, reject) => {
   // call resolve(value) when done, reject(error) if something went wrong
 });
+
+p.then((value) => console.log(value))
+ .catch((err) => console.error(err))
+ .finally(() => console.log("request complete"));
 ```
 
-Chain `.then()` to handle the resolved value, `.catch()` for errors, `.finally()` for cleanup that runs either way.
+`.then()` handles the resolved value, `.catch()` handles errors, `.finally()` runs either way.
 
-### 2.1
+**async/await**
 
-Create a Promise that resolves with the string `"done"` after 500ms. Chain `.then()` to log the result.
-
-Then create a second version that rejects with an `Error` instead. Add `.catch()` to handle it. Confirm that without `.catch()`, Node.js prints an unhandled rejection warning.
-
-### 2.2
-
-Rewrite the three functions from section 1.2 to return Promises instead of taking callbacks. The signatures should look like:
+`async`/`await` is syntax built on top of Promises. An `async` function always returns a Promise. Inside one, `await` pauses execution until a Promise resolves — without blocking the thread.
 
 ```ts
-function getUser(id: number): Promise<{ id: number; name: string }>
-function getOrders(userId: number): Promise<string[]>
-function getOrderDetails(orderId: string): Promise<string>
-```
-
-Chain them with `.then()` to reproduce the same result as 1.2. Add a single `.catch()` at the end.
-
-Compare the shape of this code to your nested callbacks. Note the difference.
-
-### 2.3
-
-Add `.finally()` to your chain from 2.2 to log `"request complete"` whether it succeeded or failed.
-
-Then deliberately make `getOrders` reject — confirm `.catch()` catches it and `.finally()` still runs.
-
-## 3. async/await
-
-`async/await` is syntax built on top of Promises. An `async` function always returns a Promise. Inside one, `await` pauses execution until a Promise resolves — without blocking the thread. Under the hood it's still Promises.
-
-```ts
-async function example() {
-  const result = await somePromise();
-  console.log(result);
+async function getOrderDetails(): Promise<string> {
+  try {
+    const user = await getUser(1);
+    const orders = await getOrders(user.id);
+    const detail = await getOrderDetails(orders[0]);
+    return detail;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 }
 ```
 
-### 3.1
+`try`/`catch` is the `async`/`await` equivalent of `.catch()` on a Promise chain.
 
-Rewrite your chain from 2.2 as an `async` function using `await`. It should read like synchronous code — no `.then()` calls.
+**Running things in parallel**
 
-### 3.2
+`await`ing calls one after another runs them sequentially, even when they don't depend on each other. `Promise.all` runs them in parallel:
 
-Add error handling to your async function. `async/await` uses `try/catch` — look up how it maps to `.catch()` on a Promise chain.
+```ts
+const sequential = [];
+for (const id of orderIds) {
+  sequential.push(await getOrderDetails(id)); // waits for each one before starting the next
+}
 
-Make `getOrders` reject and confirm your `catch` block handles it.
+const parallel = await Promise.all(orderIds.map(getOrderDetails)); // all start immediately
+```
 
-### 3.3
+**fetch**
 
-Write two functions that both use the three helpers from section 1.2 (the Promise versions):
-
-- `fetchSequential` — fetches order details for each order one at a time, returns all details as a `string[]`
-- `fetchParallel` — fetches all order details at the same time using `Promise.all`
-
-Measure how long each takes with `Date.now()`. The difference should be clear.
-
-> `Promise.all` takes an array of Promises and resolves when all of them resolve.
-
-## 4. fetch
-
-`fetch` is the built-in API for HTTP requests. It returns a Promise. Node.js 18+ includes it natively.
-
-Two things to know before the exercises:
-
-1. `fetch` gives you back a `Response` object. To get the body as JSON, call `response.json()` — that's also a Promise, so you need a second `await`.
-2. `fetch` only rejects on network failure. A 404 or 500 still resolves — `response.ok` tells you whether the status was 2xx. Always check it.
-
-### 4.1
-
-Write an async function that fetches a single todo from `https://jsonplaceholder.typicode.com/todos/1` and logs the result. You'll need two `await` calls — one for the response, one for the JSON body.
-
-### 4.2
-
-Update your function to check `response.ok` before parsing the body. If the request failed, throw an `Error` with the status code in the message. Test it works by changing the URL to a bad endpoint.
-
-### 4.3
-
-Define a `Todo` interface that matches the shape of the response:
+`fetch` is the built-in API for HTTP requests and returns a Promise. Node.js 18+ includes it natively.
 
 ```ts
 interface Todo {
@@ -165,75 +83,22 @@ interface Todo {
   title: string;
   completed: boolean;
 }
-```
 
-Wrap your fetch logic in a typed function `getTodo(id: number): Promise<Todo>`. Use it to fetch todo 5 and log the title and completed status in a formatted string.
-
-### 4.4
-
-Use `getTodo` and `Promise.all` to fetch todos 1 through 5 in parallel. Log each title when they all resolve.
-
-### 4.5 — Challenge
-
-Write a function `searchTodos(query: string): Promise<Todo[]>` that:
-
-1. Fetches all todos from `https://jsonplaceholder.typicode.com/todos`
-2. Returns only the completed ones whose title contains the query (case-insensitive)
-
-Print the count and titles of the results.
-
-Then handle the failure case — if the fetch fails, print a user-friendly message instead of crashing.
-
-## 5. Common mistakes
-
-### 5.1
-
-Forgetting `await` is the most common error. Run this:
-
-```ts
-async function run() {
-  const response = fetch("https://jsonplaceholder.typicode.com/todos/1");
-  console.log(response);
-}
-
-run();
-```
-
-What does `response` contain? Why? Fix it.
-
-### 5.2
-
-`await` inside `.forEach()` doesn't work the way you'd expect:
-
-```ts
-async function run() {
-  const ids = [1, 2, 3];
-
-  ids.forEach(async (id) => {
-    const todo = await getTodo(id);
-    console.log(todo.title);
-  });
-
-  console.log("done");
+async function getTodo(id: number): Promise<Todo> {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.json();
 }
 ```
 
-Run it. Notice the order of output. `forEach` doesn't wait for async callbacks — it fires them all and moves on.
+Two things that trip people up:
+- `response.json()` is also a Promise — it needs its own `await`.
+- `fetch` only rejects on network failure. A 404 or 500 still *resolves* — check `response.ok` to catch it.
 
-Figure out two ways to fix this: one that processes items sequentially, one that processes them in parallel.
+**Common mistakes**
 
-### 5.3
-
-If an async function throws and nothing catches it, Node.js will warn about an unhandled rejection. Write an async function that throws, call it without `.catch()`, and read the warning. Then fix it.
-
-## Checklist
-
-- [ ] Understand why JavaScript needs async — single-threaded, can't block
-- [ ] Can read and write callback-style async code
-- [ ] Can create a Promise manually with `resolve` and `reject`
-- [ ] Can chain `.then()`, `.catch()`, and `.finally()`
-- [ ] Can rewrite a Promise chain using `async/await`
-- [ ] Know how to handle errors with `try/catch` in async functions
-- [ ] Can use `Promise.all` to run multiple async operations in parallel
-- [ ] Can fetch data from an API using `fetch`, check `response.ok`, and type the result
-- [ ] Know why `await` inside `.forEach()` doesn't work and what to use instead
+- *Forgetting `await`.* Without it, you get the `Promise` object itself, not its resolved value.
+- *`await` inside `.forEach()`.* `forEach` doesn't wait for async callbacks — it fires them all and moves on immediately, so logging happens out of order. Use a `for...of` loop for sequential awaits, or `Promise.all` for parallel ones.
+- *Unhandled rejections.* If an async function throws and nothing catches it, Node.js warns about an unhandled rejection. Always wrap awaited calls in `try`/`catch`, or attach `.catch()`.

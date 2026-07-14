@@ -2,6 +2,8 @@
 
 Python ships with a package manager (pip) and a virtual environment tool (venv). You need both for any real project. This tutorial walks you through them hands-on.
 
+**Video:** [How To Setup A Virtual Environment For Python In Visual Studio Code](https://www.youtube.com/watch?v=GZbeL5AcTgw) — watch this first if you'd rather see venv setup done visually before typing the commands yourself.
+
 Work through each section in order. Every exercise has something to run in your terminal.
 
 ## 0. What problem are we solving?
@@ -14,17 +16,15 @@ The rule is simple: one project, one venv, always activated before you work.
 
 ### 1.1
 
-Create a new folder called `pip-exercises` and navigate into it. Then create a virtual environment:
+Create a folder `pip-exercises`, `cd` into it, and create a venv:
 
 ```bash
 python -m venv .venv
 ```
 
-This creates a `.venv` folder. Look inside it — you'll see a copy of Python and a `lib` directory where packages will live.
-
 ### 1.2
 
-Activate the environment:
+Activate it:
 
 ```bash
 # Mac/Linux
@@ -37,42 +37,23 @@ source .venv/bin/activate
 .venv\Scripts\Activate.ps1
 ```
 
-Your terminal prompt should now show `(.venv)` at the start. That's how you know it's active.
-
-**Verify:** Run `which python` (Mac/Linux) or `where python` (Windows). The path should point inside your `.venv` folder, not your system Python.
+Your prompt should show `(.venv)`. **Verify:** run `which python` (Mac/Linux) or `where python` (Windows) — the path should point inside `.venv`, not your system Python.
 
 ### 1.3
 
-Check what's currently installed in your fresh environment:
+Run `pip list` — you should see almost nothing, just `pip` itself. That's a clean slate for every project.
 
-```bash
-pip list
-```
-
-You should see almost nothing — just `pip` itself and maybe `setuptools`. That's the point. A clean slate for every project.
-
-### 1.4
-
-Deactivate the environment and run `pip list` again. Notice the difference.
-
-```bash
-deactivate
-pip list
-```
-
-Now reactivate before continuing.
+Now `deactivate` and run `pip list` again. Notice the difference, then reactivate before continuing.
 
 ## 2. Installing Packages
 
 ### 2.1
 
-Install the `requests` library:
+Install `requests`, confirm it shows up in `pip list`, then confirm it actually works:
 
 ```bash
 pip install requests
 ```
-
-Run `pip list` again. It should now appear. Then open a Python shell and confirm it works:
 
 ```python
 import requests
@@ -81,33 +62,21 @@ print(requests.__version__)
 
 ### 2.2
 
-Install a specific version of a package. The syntax is `package==version`:
+Install a specific version with `package==version`, and check the version again — pip will downgrade if needed:
 
 ```bash
 pip install "requests==2.28.0"
 ```
 
-Check the version again. pip will downgrade if needed.
-
 ### 2.3
 
-Install multiple packages at once:
+Uninstall it:
 
 ```bash
-pip install httpx rich
+pip uninstall requests
 ```
 
-These are common in real projects. `httpx` is a modern HTTP client, `rich` is for pretty terminal output. You don't need to know them — just get comfortable with installing.
-
-### 2.4
-
-Uninstall a package:
-
-```bash
-pip uninstall httpx
-```
-
-pip will ask for confirmation. Confirm it, then verify it's gone with `pip list`.
+Confirm it with `pip list`, then reinstall the latest version for the next section.
 
 ## 3. Requirements Files
 
@@ -115,128 +84,69 @@ This is how you share dependencies with your team or deploy to a server.
 
 ### 3.1
 
-Freeze your current environment into a `requirements.txt`:
+Freeze your environment into a file — this is what gets committed to git:
 
 ```bash
 pip freeze > requirements.txt
 ```
 
-Open the file. Every installed package is listed with its exact version. This is what gets committed to git.
+Open it. Every installed package is pinned to its exact version.
 
 ### 3.2
 
-Create a new virtual environment in a separate folder to simulate a fresh machine:
+Simulate a fresh machine: create a new venv in a separate folder and install from the file.
 
 ```bash
-mkdir fresh-install
-cd fresh-install
+mkdir fresh-install && cd fresh-install
 python -m venv .venv
 source .venv/bin/activate   # or the Windows equivalent
-```
-
-Install everything from the requirements file:
-
-```bash
 pip install -r ../requirements.txt
 ```
 
-Run `pip list`. It should match your original environment exactly.
-
-Deactivate and go back to your `pip-exercises` folder.
+Run `pip list` — it should match your original environment exactly. Deactivate and go back to `pip-exercises`.
 
 ### 3.3
 
-Most projects separate dev dependencies (linters, test runners) from production dependencies. By convention you'd have two files:
-
-- `requirements.txt` — what the app needs to run
-- `requirements-dev.txt` — what developers additionally need
-
-Create `requirements-dev.txt` manually and add:
-
-```
-pytest
-```
-
-Install it:
+Most projects split production deps from dev-only deps (linters, test runners) into `requirements.txt` and `requirements-dev.txt`. Create `requirements-dev.txt` by hand with `pytest` in it, then install it:
 
 ```bash
 pip install -r requirements-dev.txt
 ```
 
-The idea: when deploying to production, you only install `requirements.txt`. Locally you install both.
+In production you'd install only `requirements.txt`; locally you install both.
 
 ## 4. pip show and pip check
 
 ### 4.1
 
-Get detailed info about an installed package:
-
-```bash
-pip show requests
-```
-
-This tells you the version, where it's installed, its dependencies, and its homepage. Useful when something breaks.
+`pip show requests` gives you the version, location, dependencies, and homepage — useful when something breaks.
 
 ### 4.2
 
-Check for dependency conflicts in your environment:
-
-```bash
-pip check
-```
-
-If everything is consistent, you'll see "No broken requirements." This is worth running after installing or upgrading anything significant.
+`pip check` reports dependency conflicts in your environment. Run it now; you should see "No broken requirements."
 
 ### 4.3
 
-List outdated packages:
-
-```bash
-pip list --outdated
-```
-
-Try upgrading one:
-
-```bash
-pip install --upgrade rich
-```
-
-Then run `pip freeze > requirements.txt` again to save the updated version.
+`pip list --outdated` lists what's behind. Upgrade one (`pip install --upgrade requests`), then re-run `pip freeze > requirements.txt` to save the new version.
 
 ## 5. Common Mistakes
 
 ### 5.1
 
-Run this without activating your venv first:
+Deactivate your venv, then install something:
 
 ```bash
 deactivate
 pip install cowsay
 ```
 
-Now activate your venv and try to import it:
+Reactivate and try `import cowsay` in Python — it fails, because the package went to your system Python, not the venv. This is the most common beginner mistake. Reinstall it properly with the venv active.
 
-```python
-import cowsay
-```
-
-It will fail. This is the most common mistake beginners make — installing without the venv active means the package goes to the wrong place.
-
-Activate your venv and install it again properly.
+`ModuleNotFoundError` almost always means one of these two things: the package isn't installed, or your venv isn't active. Check the venv first.
 
 ### 5.2
 
-Try importing a package that isn't installed:
-
-```python
-import pandas
-```
-
-Read the error. `ModuleNotFoundError` means either the package isn't installed, or you're in the wrong environment. When you see this error on a real project, the first thing to check is whether your venv is active.
-
-### 5.3
-
-What happens when you delete your venv folder and try to run your code?
+Delete your venv folder entirely and try to run your code:
 
 ```bash
 deactivate
@@ -244,7 +154,7 @@ rm -rf .venv   # Windows: rmdir /s /q .venv
 python -c "import requests"
 ```
 
-Nothing is permanently lost — you still have `requirements.txt`. Recreate the environment:
+Nothing is permanently lost — `requirements.txt` still describes the environment. Recreate it:
 
 ```bash
 python -m venv .venv
@@ -252,7 +162,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-This is the point of `requirements.txt`. The venv is disposable; the file is what matters.
+The venv is disposable; the requirements file is what matters.
 
 ## 6. Putting It Together
 

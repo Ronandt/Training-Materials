@@ -1,391 +1,144 @@
-# Pydantic Exercises
+# Pydantic Reference
 
 Pydantic is a data validation library. You define data shapes as Python classes — Pydantic validates incoming data against those shapes, converts types where possible, and raises clear errors when data doesn't fit. FastAPI uses Pydantic for all request and response validation, so learning it here pays off immediately in the next tutorial.
 
-Work through each section in order. Every exercise has something to run in your terminal.
-
-**This is a continuation of the FastAPI tutorial.** The FastAPI tutorial used simple inline Pydantic models. This tutorial goes deeper — validators, nested models, serialization patterns, and the full schema design you will carry into the SQLAlchemy tutorial.
+**This is a continuation of the FastAPI tutorial.** This project keeps to exactly **two models: `User` and `Task`** — no separate Create/Response/Update variants. Each model has an `id: int | None = None` field: `None` when the client is creating something, filled in once the server assigns one. That one pattern does the job a Create/Response split would otherwise do, with half the classes to maintain.
 
 **Track order:**
 - **FastAPI tutorial:** Build a working in-memory API ✓
-- **Pydantic (this file):** Deepen your Pydantic knowledge and build production-quality schemas
+- **Pydantic (this file):** Deepen your Pydantic knowledge on the same two models
 - **SQLAlchemy (continuation):** Replace the in-memory store with a real database
 
-**Reference:** [Pydantic docs](https://docs.pydantic.dev/latest/)
+## Video
 
-## 0. Setup
+[FastAPI for Beginners — Python Web Framework](https://www.youtube.com/watch?v=Lu8lXXlstvM&t=4954s) (Telusko) — this single course covers Pydantic, FastAPI, and SQLAlchemy; the timestamp lands on the Pydantic section.
 
-Create a folder for the project you will build across all three tutorials:
+## Resources
 
-```bash
-mkdir task-api
-cd task-api
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate.bat
-```
+- [Pydantic docs](https://docs.pydantic.dev/latest/)
 
-Install Pydantic:
+## Reference
 
-```bash
-pip install pydantic
-```
-
-Verify the version (these exercises use v2):
-
-```bash
-python -c "import pydantic; print(pydantic.__version__)"
-```
-
-If the version starts with `1`, upgrade: `pip install --upgrade pydantic`.
-
-Create a file called `schemas.py` inside `task-api`. You will build this file up across the whole tutorial — it will be imported directly by the SQLAlchemy and FastAPI tutorials.
-
-## 1. Basic Models
-
-A Pydantic model is a class that inherits from `BaseModel`. Each field is a class attribute with a type annotation. When you instantiate the model, Pydantic validates the data automatically.
+**Basic models.** A model is a class that inherits from `BaseModel`. Each field is a class attribute with a type annotation, validated automatically on instantiation:
 
 ```python
 from pydantic import BaseModel
 
 class User(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     email: str
 
-user = User(id=1, name="Alice", email="alice@example.com")
-print(user.id)    # 1
-print(user.name)  # Alice
+user = User(name="Alice", email="alice@example.com")
+print(user.id)  # None — nothing has assigned one yet
 ```
 
-### 1.1
+`id: int | None = None` is the pattern that replaces a Create/Response pair: the same class represents a user *being created* (no `id` yet) and one *already stored* (an `id` supplied by whatever created it).
 
-In `schemas.py`, define a `User` model with `id: int`, `name: str`, and `email: str`. Create an instance and print each field. Run the file:
-
-```bash
-python schemas.py
-```
-
-### 1.2
-
-Pydantic coerces compatible types automatically:
-
-```python
-user = User(id="42", name="Alice", email="alice@example.com")
-print(user.id)        # 42  (int, not "42")
-print(type(user.id))  # <class 'int'>
-```
-
-Try creating a `User` where `id` is the string `"42"`. Confirm Pydantic converts it to an integer. Then try passing a string that cannot be converted, like `"abc"`. Read the `ValidationError`.
-
-### 1.3
-
-When validation fails, Pydantic raises a `ValidationError` with information about every field that failed:
+Pydantic coerces compatible types automatically (`id="1"` becomes `1`), and raises `ValidationError` — listing every failed field, what value it got, and why — when a value can't be converted:
 
 ```python
 from pydantic import ValidationError
 
 try:
-    user = User(id="not-a-number", name="Alice", email="alice@example.com")
+    User(id="not-a-number", name="Alice", email="alice@example.com")
 except ValidationError as e:
     print(e)
 ```
 
-Run this. The output shows the field name, the value that failed, and why. Deliberately trigger two validation errors at once by passing bad values for two different fields.
-
-### 1.4
-
-Define a `Task` model in `schemas.py` with these fields:
-
-- `id: int`
-- `title: str`
-- `priority: str`
-- `status: str`
-- `owner_id: int`
-
-Create two `Task` instances with different values and print them. You will extend this model throughout the tutorial.
-
-## 2. Field Constraints
-
-`Field()` lets you add constraints to individual fields.
+**Field constraints.** `Field()` adds constraints to individual fields: `gt`/`ge`/`lt`/`le` for numbers, `min_length`/`max_length` for strings, `pattern` for regex. `Literal` restricts a field to a fixed set of values:
 
 ```python
-from pydantic import BaseModel, Field
-
-class Product(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
-    price: float = Field(gt=0)           # greater than 0
-    quantity: int = Field(ge=0, le=999)  # 0 <= quantity <= 999
-```
-
-Constraints: `gt` (greater than), `ge` (≥), `lt` (less than), `le` (≤), `min_length`, `max_length`, `pattern` (regex).
-
-### 2.1
-
-Update `Task` in `schemas.py` to add constraints:
-
-- `title`: minimum 1 character, maximum 200 characters
-- `priority`: must be one of `"low"`, `"medium"`, `"high"` — use `Literal` from `typing`
-- `status`: must be one of `"todo"`, `"in-progress"`, `"done"` — also `Literal`
-
-```python
+from pydantic import BaseModel, Field, EmailStr
 from typing import Literal
 
 class Task(BaseModel):
-    id: int
+    id: int | None = None
     title: str = Field(min_length=1, max_length=200)
-    priority: Literal["low", "medium", "high"]
-    status: Literal["todo", "in-progress", "done"]
+    priority: Literal["low", "medium", "high"] = "medium"
+    status: Literal["todo", "in-progress", "done"] = "todo"
     owner_id: int
-```
-
-Try creating a `Task` with `priority="urgent"`. Read the validation error.
-
-### 2.2
-
-Update `User` to validate the email address properly. Install the optional email validator first:
-
-```bash
-pip install "pydantic[email]"
-```
-
-Then use `EmailStr`:
-
-```python
-from pydantic import BaseModel, EmailStr, Field
 
 class User(BaseModel):
-    id: int
+    id: int | None = None
     name: str = Field(min_length=1, max_length=100)
-    email: EmailStr
+    email: EmailStr  # needs: pip install "pydantic[email]"
 ```
 
-Try passing `"not-an-email"` and read the error.
-
-### 2.3 — Challenge
-
-Define a `Comment` model (practice only — not part of the project). A comment has:
-
-- `body`: string, 1–1000 characters
-- `rating`: integer, 1–5 inclusive
-- `author_email`: valid email
-- `url`: optional URL — look up `AnyHttpUrl` from Pydantic
-
-Write code that creates a valid comment, then another that triggers at least three different field errors in a single attempt.
-
-## 3. Optional Fields and Defaults
-
-Not every field is required. Optional fields use `| None` with a default of `None`. Regular defaults are assigned with `=`.
-
-```python
-class Task(BaseModel):
-    id: int
-    title: str
-    description: str | None = None  # optional, defaults to None
-    priority: str = "medium"        # has a default but is still typed
-```
-
-### 3.1
-
-Add `description: str | None = None` to `Task`. Create one task with a description and one without. Confirm the field exists and is `None` in the second case.
-
-### 3.2
-
-`default_factory` is for mutable or dynamic defaults — a callable that is called each time a new instance is created. Use it for lists and timestamps:
+**Optional fields and defaults.** `| None = None` marks a field optional; `= value` gives a plain default. `default_factory` is for mutable or dynamic defaults — a callable invoked fresh for each instance, used for lists and timestamps:
 
 ```python
 from datetime import datetime
-from pydantic import Field
 
 class Task(BaseModel):
     ...
+    description: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     tags: list[str] = Field(default_factory=list)
 ```
 
-Add `created_at` and `tags` to `Task` with `default_factory`. Create two tasks without supplying these fields — confirm each gets its own independent `created_at`.
-
-### 3.3
-
-In real APIs you need separate models for creating vs reading data:
-
-- **Create model**: no `id` (the database assigns it), no `created_at`
-- **Response model**: includes `id`, `created_at`, and everything else
-
-Add `TaskCreate` to `schemas.py` — same fields as `Task` but without `id` and `created_at`. Then rename `Task` to `TaskResponse`. You will use `TaskCreate` for POST request bodies and `TaskResponse` for what the API returns.
-
-Update any test code that used the old name.
-
-### 3.4 — Challenge
-
-Add `UserCreate` (no `id`) and `UserResponse` (with `id`) to `schemas.py`. Then write a function `make_user_response(create: UserCreate, generated_id: int) -> UserResponse` that constructs a `UserResponse` from a `UserCreate` plus a generated id. Use `model_dump()` to help convert between them:
+**`model_copy` — why one model is enough.** `model_copy(update=...)` returns a new instance with specific fields overridden, leaving the original untouched:
 
 ```python
-def make_user_response(create: UserCreate, generated_id: int) -> UserResponse:
-    data = create.model_dump()
-    data["id"] = generated_id
-    return UserResponse(**data)
+draft = Task(title="Write tests", priority="high", owner_id=1)
+print(draft.id)  # None — this is what a client POSTs
+
+saved = draft.model_copy(update={"id": 7})
+print(saved.id)   # 7 — this is what the server returns
+print(draft.id)   # still None — model_copy doesn't mutate the original
 ```
 
-Call it and print the result.
+A client sends a `Task` with no `id`; the server assigns one with `model_copy(update={"id": new_id})` and returns the same `Task` type back. This is what the FastAPI tutorial uses instead of separate `TaskCreate`/`TaskResponse` classes — and it's also how partial updates work, by merging only the changed fields.
 
-## 4. Nested Models
-
-A Pydantic model can contain another model as a field. Validation is recursive — all nested models are validated too.
+**Validators.** `@field_validator` runs custom logic after the standard type check — return the (possibly transformed) value, or raise `ValueError`:
 
 ```python
-class Address(BaseModel):
-    street: str
-    city: str
-
-class Person(BaseModel):
-    name: str
-    address: Address
-
-# Pydantic accepts a dict or an Address instance
-person = Person(name="Alice", address={"street": "123 Main St", "city": "London"})
-print(person.address.city)  # London
-```
-
-### 4.1
-
-Add `owner: UserResponse` to `TaskResponse`. Update your test code to embed a full `UserResponse` inside a `TaskResponse`. Access `task.owner.name` and print it.
-
-### 4.2
-
-Models can contain lists of other models:
-
-```python
-class ProjectResponse(BaseModel):
-    id: int
-    name: str
-    tasks: list[TaskResponse]
-```
-
-Define `ProjectResponse` and create an instance with three tasks. Print the title of each task using a loop.
-
-### 4.3 — Challenge
-
-Validation errors in nested models report the full path to the failing field:
-
-```python
-try:
-    ProjectResponse(id=1, name="x", tasks=[{"id": 1, "title": "", ...}])
-except ValidationError as e:
-    print(e)
-# error location will show: tasks -> 0 -> title
-```
-
-Deliberately trigger validation errors at two levels of nesting — one on the project itself and one inside a task in its list. Read the output and understand the location format.
-
-## 5. Validators and Serialization
-
-### 5.1
-
-`@field_validator` runs custom validation logic on a field after the standard type check. Return the (possibly transformed) value, or raise `ValueError`:
-
-```python
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 
 class User(BaseModel):
-    name: str
-    email: EmailStr
-
+    ...
     @field_validator("name")
     @classmethod
     def strip_whitespace(cls, v: str) -> str:
         return v.strip()
-
-    @field_validator("email")
-    @classmethod
-    def email_must_be_lowercase(cls, v: str) -> str:
-        if v != v.lower():
-            raise ValueError("email must be lowercase")
-        return v
 ```
 
-Add a validator to `UserCreate` that strips whitespace from `name`. Confirm that `name="  Alice  "` is stored as `"Alice"`.
-
-### 5.2
-
-`model_dump()` serializes a model to a plain Python dict. `model_dump_json()` serializes to a JSON string:
+**Serialization.** `model_dump()` → plain dict, `model_dump_json()` → JSON string, `model_validate()` reconstructs a model from a dict (e.g. a database row or API payload):
 
 ```python
-task = TaskResponse(...)
-print(task.model_dump())
-print(task.model_dump_json())
+task = Task(id=1, title="Write tests", priority="high", status="todo", owner_id=1)
+task.model_dump(exclude={"id", "created_at"})  # dict, minus some fields
+task.model_dump_json()                          # JSON string
 
-# Exclude specific fields
-print(task.model_dump(exclude={"id", "created_at"}))
-```
-
-Create a `TaskResponse` and print its dict and JSON forms. Then print it again excluding `id` and `created_at`.
-
-### 5.3
-
-`model_validate()` reconstructs a model from a dict. This is how you rebuild a model from a database row or an incoming API payload:
-
-```python
 data = task.model_dump()
 data["title"] = "Updated title"
-updated = TaskResponse.model_validate(data)
-print(updated.title)
+Task.model_validate(data)  # rebuilt with the change applied
 ```
 
-Take the dict from `model_dump()`, change a field, and reconstruct a new `TaskResponse` using `model_validate()`. Confirm the change took effect.
-
-### 5.4 — Challenge
-
-`model_config` controls model-wide behaviour:
+**`model_config`** controls model-wide behaviour — `str_strip_whitespace=True` trims every string field automatically; `frozen=True` makes a model immutable (which is exactly why `model_copy` — not direct assignment — is the normal way to change a field):
 
 ```python
 from pydantic import ConfigDict
 
-class TaskCreate(BaseModel):
+class Task(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     ...
 ```
 
-Add `str_strip_whitespace=True` to `TaskCreate`. Confirm that a title with surrounding spaces is automatically trimmed without a manual validator.
+> Pydantic models can nest other models as fields (validation is recursive), but this project doesn't need that — `Task.owner_id` stays a plain int, and the FastAPI tutorial fetches the owner separately rather than embedding a full `User` inside every `Task`. Two flat models is the whole project.
 
-Then try adding `frozen=True` to any model and attempt to reassign a field — read the error. Frozen models behave like immutable dataclasses.
+## Final Project
 
-## 6. Putting It Together
+Build `schemas.py` in your `task-api` folder. It will be imported directly by the SQLAlchemy and FastAPI tutorials — do not rename or move it, and do not add more models to it.
 
-Finalize `schemas.py`. This file will be imported directly by the SQLAlchemy and FastAPI tutorials — do not rename or move it.
+Your `schemas.py` must export exactly these two models:
 
-### Final Exercise
-
-Your `schemas.py` must export these five models, all fully constrained:
-
-**User models**
-
-- `UserCreate`: `name` (1–100 chars, whitespace stripped), `email` (valid email) — no `id`
-- `UserResponse`: all `UserCreate` fields plus `id: int`
-
-**Task models**
-
-- `TaskCreate`: `title` (1–200 chars), `description` (optional `str | None`), `priority` (low/medium/high, default `"medium"`), `owner_id: int` — no `id`, `status`, or `created_at`
-- `TaskUpdate`: every field optional (`str | None = None` for all) — used for PATCH requests where the caller sends only what they want to change
-- `TaskResponse`: `id: int`, `title`, `description`, `priority`, `status` (default `"todo"`), `created_at: datetime`, `owner: UserResponse`
+- **`User`**: `id: int | None = None`, `name` (1–100 chars, whitespace stripped, via `str_strip_whitespace`), `email: EmailStr`, plus a `@field_validator` on `name` that raises `ValueError` if the name is purely digits
+- **`Task`**: `id: int | None = None`, `title` (1–200 chars), `description: str | None = None`, `priority` (`Literal["low", "medium", "high"]`, default `"medium"`), `status` (`Literal["todo", "in-progress", "done"]`, default `"todo"`), `owner_id: int`, `created_at: datetime` (via `default_factory`)
 
 Requirements:
-- `str_strip_whitespace = True` on all models via `model_config`
-- A `@field_validator` on `UserCreate.name` that raises `ValueError` if the name is purely digits
-- All five models must round-trip: `Model.model_validate(instance.model_dump())` must succeed
+- `str_strip_whitespace = True` on both models via `model_config`
+- Both models must round-trip: `Model.model_validate(instance.model_dump())` must succeed
+- Demonstrate the create-then-assign-id pattern: build a `Task` with no `id`, then produce a "saved" version with `model_copy(update={"id": ...})`
 
-Test by instantiating one of each model and printing its JSON. Fix any errors until all five pass.
-
-## Checklist
-
-- [ ] Can define a `BaseModel` with typed fields and create instances
-- [ ] Understand how Pydantic coerces types and when it raises `ValidationError`
-- [ ] Can use `Field()` to add constraints (length, numeric bounds)
-- [ ] Can use `Literal` to restrict a field to a fixed set of values
-- [ ] Can use `EmailStr` and install Pydantic optional extras
-- [ ] Know the difference between `str | None = None` and a required field
-- [ ] Can use `default_factory` for mutable or dynamic defaults
-- [ ] Can nest models and access nested fields
-- [ ] Can write a `@field_validator` that transforms or rejects a value
-- [ ] Can serialize with `model_dump()` and `model_dump_json()`
-- [ ] Can deserialize from a dict with `model_validate()`
-- [ ] `schemas.py` is complete with all five models and passes all round-trip tests
+Test by instantiating one of each model and printing its JSON. Fix any errors until both pass.
