@@ -2,6 +2,8 @@
 
 React is a JavaScript library for building user interfaces. This is part 1 of 2 for a Task Manager-style frontend — it gets a real, navigable, styled app running before you ever call an API. Part 2 (`react_api_tutorial.md`) picks up the same project and wires it to [JSONPlaceholder](https://jsonplaceholder.typicode.com/), a free public fake REST API — no backend of your own required.
 
+**Slides:** [`why-react-slides.pdf`](why-react-slides.pdf) — read this first if you haven't touched React before. It picks up right where the DOM tutorial left off: why manual DOM code gets unwieldy, and what problem components/state/JSX actually solve.
+
 **This part's stack:**
 - **Vite** — build tool and dev server
 - **React** — UI component model
